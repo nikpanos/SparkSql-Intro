@@ -4,6 +4,7 @@
 
 ## DataFrame Creation
 Η βασική δομή επεξεργασίας δεδομένων στο Sparql SQL API είναι ένα DataFrame.
+
 Μπορούμε να δημιουργήσουμε ένα DataFrame είτε διαβάζοντας απευθείας από κάποιο αρχείο, είτε να μετατρέψουμε ένα RDD σε DataFrame:
 
 Αρχικά δημιουργούμε ένα RDD που περιέχει νούμερα από το 1 μέχρι το 50:
@@ -38,6 +39,7 @@ df.show
 ```
 
 Τα DataFrames είναι μια semi-structured δομή όπου τα δεδομένα οργανώνονται σε named columns. Ένα DataFrame μπορεί να έχει οποιοδήποτε πλήθος/τύπο στηλών.
+
 Τα DataFrames είναι column-based data structures σε αντίθεση με τα rdd που είναι row-based. Έτσι, σχεδόν operations στα DataFrames γίνονται πάνω σε συγκεκριμένες στήλες και όχι σε ολόκληρο το row.
 
 Επίσης μπορούμε να δημιουργήσουμε DataFrames διαβάζοντας κάποιο input αρχείο:
@@ -51,6 +53,7 @@ json file, parquet file, text file, jdbc
 ```
 ## DataFrame Operations
 Επειδή τα DataFrames είναι immutable, οποιαδήποτε αλλαγή κάνουμε σε αυτά, δημιουργεί ένα νέο DataFrame.
+
 Το νέο DataFrame μπορούμε είτε να το εμφανίσουμε στην οθόνη απευθείας, είναι να το κρατήσουμε ως ξεχωριστή μεταβλητή στη μνήμη για περαιτέρω επεξεργασία.
 
 Αρχικά χρειάζεται να κάνουμε import:
@@ -87,11 +90,14 @@ df2.drop(col("halfValue")).show
 Σημείωση: Τα DataFrames είναι immutable. Δε διαγράφεται η τιμή από το df2. Δημιουργείται ένα νέο DataFrame χωρίς την κολώνα "halfValue"
 
 Υπάρχουν πολλά ακόμα operations που μπορούν να γίνουν πάνω σε dataframes με τη μορφή συναρτήσεων.
+
 Μια πλήρη λίστα για την έκδοση 1.6.1 μπορεί να βρεθεί εδώ: https://spark.apache.org/docs/1.6.1/api/java/index.html?org/apache/spark/sql/functions.html
+
 Για τις νεότερες εκδόσεις του Spark (2.4.3), η λίστα είναι διαθέσιμη εδώ: https://spark.apache.org/docs/2.4.3/api/sql/index.html
 
 ## SQL Queries
 Δίνεται η δυνατότητα να εκτελέσουμε SQL queries πάνω σε δεδομένα των DataFrames.
+
 Το αποτέλεσμα ενός SQL Query είναι ένα νέο DataFrame.
 
 Αρχικά κάνουμε register ένα υπάρχον DataFrame:
@@ -105,6 +111,7 @@ sqlContext.sql("SELECT * FROM numbers WHERE halfValue < 10").show
 
 ## User Defined Functions (udf)
 Υπάρχουν περιπτώσεις όπου οι διαθέσιμες συναρτήσεις δεν παρέχουν τη λειτουργικότητα που θέλουμε.
+
 Το Spark παρέχει τη δυνατότητα να γράφουμε δικές μας συναρτήσεις που θα εκτελεστούν πάνω σε κολώνες των δεδομένων.
 
 Η παρακάτω udf συνάρτηση επιστρέφει true όταν το τρίτο bit είναι 1 και false όταν είναι 0:
@@ -117,10 +124,12 @@ val df3 = df2.filter(bitFilter(col("value")))
 df3.show
 ```
 Οι udf συναρτήσεις μπορούν να παίρνουν ως όρισμα μία ή περισσότερες κολώνες και μία ή περισσότερες constant τιμές.
+
 Μπορούν να χρησιμοποιηθούν οπουδήποτε ως αντικατάσταση μιας κολώνας πχ: στα aggregation operations, στα filter operations, στα withColumn operations και άλλα.
 
 ## Lazy Evaluation
 Όπως και στα RDDs, τα operations στα DataFrames γίνονται lazy evaluated. Αυτό σημαίνει ότι δεν εκτελούνται αμέσως, αλλά όταν θέλουμε να πάρουμε το αποτέλεσμα.
+
 Τα operations που αναγκάζουν την εκτέλεση των υπολογισμών είναι τα παρακάτω:
 
 Συγκέντρωση όλων των αποτελεσμάτων σε centralized δομή στον driver:
@@ -142,7 +151,9 @@ df.show()
 
 ## Query Engine
 Το Spark SQL API διαθέτει ένα query engine, το οποίο κατασκευάζει logical και physical query plans για την εκτέλεση των υπολογισμών.
+
 Οι μέθοδοι withColumn, filter, drop, groupBy, aggregate δεν εκτελούν κάποια επεξεργασία στα δεδομένα, αλλά ενημερώνουν το logical query plan.
+
 Όταν εκτελέσουμε μέθοδο που αναγκάζει τον υπολογισμό του αποτελέσματος (collect, write, count) τότε το logical plan γίνεται optimized και έπειτα μετατρέπεται σε physical plan.
 
 Μπορούμε να δούμε τα πλάνα που κατασκευάζονται χρησιμοποιώντας την εντολή explain:
@@ -154,6 +165,7 @@ df2.explain(true)
 df3.explain(true)
 ```
 Εδώ παρατηρούμε ότι το Spark δεν μπορεί να κάνει optimize το udf και να το ενσωματώσει σε ένα βήμα εκτέλεσης γιατί δεν έχει έλεγχο στον κώδικά του.
+
 Τα UDFs παρόλο που διευκολύνουν την επεξεργασία των δεδομένων, θα πρέπει να αποφεύγονται όσο είναι δυνατό γιατί επηρεάζουν το performance της ανάλυσης.
 
 ## Caching
@@ -165,6 +177,7 @@ val df6 = df3.filter(col("value") > 20)
 df6.explain(true)
 ```
 Εδώ πραγματοποιεί την επεξεργασία του df3 πρώτα για το df5 και μετά ξανά υπολογίζει από την αρχή το df3 για να το df6.
+
 Μπορούμε να κρατήσουμε στη μνήμη τον υπολογισμό του df3, για να ξεκινάει από εκεί ο υπολογισμός:
 ```scala
 val df4 = df3.cache()
@@ -225,6 +238,9 @@ df3.map((r: Row) => {
 
 ## Resources
 Spark SQL paper: https://dblp.org/rec/conf/sigmod/ArmbrustXLHLBMK15
+
 Spark SQL Documentation (1.6.1): https://spark.apache.org/docs/1.6.1/sql-programming-guide.html
+
 Spark SQL Documentation (latest): https://spark.apache.org/docs/latest/sql-programming-guide.html
+
 Book: Spark The Definitive Guide (O'REILLY)
