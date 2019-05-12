@@ -751,6 +751,38 @@ df3.repartition(3, col("groups")).explain(true)
 Το range partitioning χρησιμοποιείται από το spark όταν ο προγραμματιστής καλέσει τη μέθοδο `repartitionByRange(C)`, όπου το C είναι μια συγκεκριμένη κολώνα (όπως και από πάνω). Εδώ το Spark κάνει ένα μικρό sampling στο dataframe, και τραβάει το sample στον driver. Χρησιμοποιώντας το sample προσπαθεί να ορίσει τα ranges με τα οποία θα κάνει το partitioning σε ολόκληρο το DataFrame. Το πλήθος των partitions ορίζεται όπως και προηγουμένως είτε από την παράμετρο `spark.sql.shuffle.partitions` του Spark, είτε χρησιμοποιώντας τη μέθοδο  `repartitionByRange(Ν, C)`. Πχ: (ΜΟΝΟ σε έκδοση Spark 2.3.0 και πάνω)
 ```scala
 df3.repartitionByRange(3, col("groups")).explain(true)
+//== Parsed Logical Plan ==
+//'RepartitionByExpression ['groups ASC NULLS FIRST], 3
+//+- Filter if (isnull(value#4)) null else UDF(value#4)
+//   +- Project [value#4, halfValue#6, (value#4 % 10) AS groups#9]
+//      +- Project [value#4, (cast(value#4 as double) / cast(2 as double)) AS halfValue#6]
+//         +- Project [value#2 AS value#4]
+//            +- SerializeFromObject [input[0, int, false] AS value#2]
+//               +- ExternalRDD [obj#1]
+//
+//== Analyzed Logical Plan ==
+//value: int, halfValue: double, groups: int
+//RepartitionByExpression [groups#9 ASC NULLS FIRST], 3
+//+- Filter if (isnull(value#4)) null else UDF(value#4)
+//   +- Project [value#4, halfValue#6, (value#4 % 10) AS groups#9]
+//      +- Project [value#4, (cast(value#4 as double) / cast(2 as double)) AS halfValue#6]
+//         +- Project [value#2 AS value#4]
+//            +- SerializeFromObject [input[0, int, false] AS value#2]
+//               +- ExternalRDD [obj#1]
+//
+//== Optimized Logical Plan ==
+//RepartitionByExpression [groups#9 ASC NULLS FIRST], 3
+//+- Project [value#2, (cast(value#2 as double) / 2.0) AS halfValue#6, (value#2 % 10) AS groups#9]
+//   +- Filter UDF(value#2)
+//      +- SerializeFromObject [input[0, int, false] AS value#2]
+//         +- ExternalRDD [obj#1]
+//
+//== Physical Plan ==
+//Exchange rangepartitioning(groups#9 ASC NULLS FIRST, 3)
+//+- *(1) Project [value#2, (cast(value#2 as double) / 2.0) AS halfValue#6, (value#2 % 10) AS groups#9]
+//   +- *(1) Filter UDF(value#2)
+//      +- *(1) SerializeFromObject [input[0, int, false] AS value#2]
+//         +- Scan[obj#1]
 ```
 
 ## DataFrames and RDDs
