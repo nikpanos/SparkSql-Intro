@@ -1,8 +1,9 @@
 # Introduction to Spark SQL
 
-Ο παρακάτω οδηγός αφορά την έκδοση 1.6.1 του spark. 
+Ο παρακάτω οδηγός περιέχει κώδικα σε [scala](https://www.scala-lang.org/) και αφορά την έκδοση 1.6.1 του [Spark](https://spark.apache.org/). 
 
 ### Table of Contents
+**[SQLContext](#sqlcontext)**<br>
 **[DataFrame Creation](#dataframe-creation)**<br>
 **[DataFrame Operations](#dataframe-operations)**<br>
 **[SQL Queries](#sql-queries)**<br>
@@ -13,6 +14,19 @@
 **[Partitioning in DataFrames](#partitioning-in-dataframes)**<br>
 **[DataFrames and RDDs](#dataframes-and-rdds)**<br>
 **[Resources](#resources)**<br>
+
+## SQLContext
+Η δημιουργία ενός SQLContext αντικειμένου είναι απαραίτητη για την επεξεργασία δεδομένων με το Spark SQL.
+
+Στο Spark shell το αντικείμενο αυτό δημιουργείται αυτόματα. Ωστόσο σε project με δικό μας κώδικα, πρέπει να δημιουργήσουμε μόνοι μας το SQLContext ως εξής:
+
+```scala
+val conf = new SparkConf().setAppName("analysis").setMaster("local[*]")
+val sc: SparkContext = new SparkContext(conf)
+val sqlContext = new SQLContext(sc)
+import sqlContext.implicits._
+```
+
 
 ## DataFrame Creation
 Η βασική δομή επεξεργασίας δεδομένων στο Sparql SQL API είναι ένα DataFrame.
