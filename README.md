@@ -2,6 +2,18 @@
 
 Ο παρακάτω οδηγός αφορά την έκδοση 1.6.1 του spark. 
 
+### Table of Contents
+**[DataFrame Creation](#dataframe-creation)**<br>
+**[DataFrame Operations](#dataframe-operations)**<br>
+**[SQL Queries](#sql-queries)**<br>
+**[User Defined Functions](#user-defined-functions)**<br>
+**[Lazy Evaluation](#lazy-evaluation)**<br>
+**[Query Engine](#query-engine)**<br>
+**[Caching](#caching)**<br>
+**[Partitioning in DataFrames](#partitioning-in-dataframes)**<br>
+**[DataFrames and RDDs](#dataframes-and-rdds)**<br>
+**[Resources](#resources)**<br>
+
 ## DataFrame Creation
 Η βασική δομή επεξεργασίας δεδομένων στο Sparql SQL API είναι ένα DataFrame.
 
@@ -394,7 +406,7 @@ sqlContext.sql("SELECT * FROM numbers WHERE halfValue < 10").show
 //+-----+---------+------+
 ```
 
-## User Defined Functions (udf)
+## User Defined Functions
 Υπάρχουν περιπτώσεις όπου οι διαθέσιμες συναρτήσεις δεν παρέχουν τη λειτουργικότητα που θέλουμε.
 
 Το Spark παρέχει τη δυνατότητα να γράφουμε δικές μας συναρτήσεις που θα εκτελεστούν πάνω σε κολώνες των δεδομένων.
@@ -741,7 +753,7 @@ df3.repartition(3, col("groups")).explain(true)
 df3.repartitionByRange(3, col("groups")).explain(true)
 ```
 
-## DataFrames & RDDs
+## DataFrames and RDDs
 Ένα DataFrame μπορεί να μετατραπεί σε RDD για την επεξεργασία των δεδομένων του με τις μεθόδους ενός RDD:
 ```scala
 val rdd = df3.rdd
