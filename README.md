@@ -13,6 +13,7 @@
 **[Caching](#caching)**<br>
 **[Partitioning in DataFrames](#partitioning-in-dataframes)**<br>
 **[DataFrames and RDDs](#dataframes-and-rdds)**<br>
+**[Working with JSON data](#working-with-json-data)**<br>
 **[Resources](#resources)**<br>
 
 ## SQLContext
@@ -317,6 +318,10 @@ df1.select(col("value")).show
 //+-----+
 //only showing top 20 rows
 ```
+Μετονομασία μιας κολώνας:
+```scala
+df1.select(col("value").as("v")).show
+```
 Εμφάνιση της μέγιστης τιμής για μια κολώνα:
 ```scala
 df1.select(max(col("value"))).show			//Υποστηρίζονται max, min, avg, stddev, sum, variance, first, last, και άλλα
@@ -325,6 +330,10 @@ df1.select(max(col("value"))).show			//Υποστηρίζονται max, min, av
 //+----------+
 //|        50|
 //+----------+
+```
+Ταξινόμηση δεδομένων σε αύξουσα ή φθίνουσα σειρά:
+```scala
+df1.orderBy(col("value").desc).show			//desc για φθίνουσα, asc για αύξουσα σειρά
 ```
 Ομαδοποίηση των δεδομένων με βάση μια κολώνα και εξαγωγή στατιστικών ανά ομάδα:
 ```scala
@@ -819,6 +828,81 @@ df3.map((r: Row) => {
 Το DataFrame `df3` περιέχει 3 κολώνες: `value`, `halfValue` και `groups`. Κάθε αντικείμενο `r: Row` περιέχει τιμές και για τα 3 πεδία. Μπορούμε να πάρουμε την τιμή του κάθε πεδίου για τη συγκεκριμένη γραμμή χρησιμοποιώντας τη μέθοδο getAs και το όνομα του πεδίου. Το παραπάνω παράδειγμα παίρνει ως όρισμα ένα RDD με Rows και επιστρέφει ένα RDD με ένα μόνο πεδίο (το value προσαυξημένο κατά 1).
 
 Παρόλο που η μετατροπή ενός DataFrame σε RDD πρέπει να αποφεύγεται για λόγους επιδόσεων, μπορεί να βοηθήσει σε περίπτωση που θέλουμε να επιτύχουμε ένα συγκεκριμένο partitioning στα DataFrames το οποίο δεν υποστηρίζεται natively από το Spark. Η μετατροπή ενός RDD σε DataFrame διατηρεί το partitioning του RDD στο DataFrame.
+
+## Working with JSON data
+Μπορούμε να δημιουργήσουμε ένα DataFrame διαβάζοντας από JSON αρχείο:
+```scala
+val dfJson = sqlContext.read.json("t.txt")
+dfJson.printSchema
+```
+
+Τα δεδομένα είναι διαθέσιμα σε named columns, χρησιμοποιώντας τα ονόματα των πεδίων από το JSON αρχείο. Υποστηρίζονται nested columns χρησιμοποιώντας το σύμβολο `.` πχ: `user.followers_count`
+
+By default, το Spark προσθέτει μια επιπλέον κολώνα στο DataFrame με όνομα `_corrupt_record`. Η κολώνα αυτή παίρνει τιμή null στις γραμμές που είναι valid JSON records. Στις γραμμές που έχουμε invalid JSON records, η κολώνα αυτή παίρνει την τιμή όλης της γραμμής.
+
+Μπορούμε να βρούμε το πλήθος των invalid records στο JSON αρχείο:
+```scala
+dfJson.filter(col("_corrupt_record").isNotNull).count
+```
+
+Ή και να κρατήσουμε μόνο τα valid records:
+```scala
+val dfJ1 = dfJson.filter(col("_corrupt_record").isNull).drop("_corrupt_record")
+```
+
+Επιλέγουμε ορισμένα πεδία για να συνεχίσουμε την επεξεργασία:
+```scala
+val dfJ2 = dfJ1.select(col("text"),
+      col("lang"),
+      col("user.followers_count").as("user_followers"),
+      col("user.name").as("user_name")
+```
+
+Εύρεση των χρηστών με το μεγαλύτερο μέσο όρο χαρακτήρων ανά μήνυμα.
+
+Αρχικά δημιουργούμε μια κολώνα που περιέχει το πλήθος των χαρακτήρων στην κολώνα `text` χρησιμοποιώντας τη συνάρτηση `length`:
+```scala
+val dfJ3 = dfJ2.withColumn("textLength", length(col("text")))
+```
+
+Στη συνέχεια εκτελούμε το query:
+```scala
+dfJ3.groupBy("user_name").agg(avg("textLength").as("AvgTextSize")).orderBy(col("AvgTextSize").desc).show
+```
+
+Εύρεση του μέγιστου πλήθους των followers σε κάποιο χρήστη:
+```scala
+dfJ2.select(max("user_followers")).show
+```
+
+Εύρεση του χρήση με τους περισσότερους followers. Εδώ δεν μπορούμε να χρησιμοποιήσουμε τη συνάρτηση max γιατί δε μας δίνει πρόσβαση σε ολόκληρο το row ώστε να μπορέσουμε να πάρουμε και την τιμή του user_name. Έτσι στο παρακάτω παράδειγμα, κάνουμε sort όλο το DataFrame και επιλέγουμε την πρώτη γραμμή:
+```scala
+dfJ2.orderBy(col("user_followers").desc).select(first("user_name"), first("user_followers")).show
+```
+
+Επειδή αυτή η λύση έχει αρκετά μεγάλο κόστος σε αποδοτικότητα, ένας άλλος τρόπος είναι να το κάνουμε σε 2 βήματα, με μικρότερο κόστος:
+```scala
+val m = dfJ2.select(max("user_followers")).first().getLong(0)
+dfJ2.select("user_followers", "user_name").filter(col("user_followers") === m).show
+```
+
+Ένας άλλος αποδοτικός τρόπος, είναι να χρησιμοποιήσουμε τη συνάρτηση struct η οποία ομαδοποιεί 2 ή περισσότερες κολώνες σε μία:
+```scala
+dfJ2.withColumn("st", struct(col("user_followers"), col("user_name"))).
+      select(max("st").as("st")).
+      select(col("st.user_followers").as("user_followers"), col("st.user_name").as("user_name")).
+      show
+```
+
+Το struct μπορεί επίσης να βοηθήσει στην περίπτωση που θέλουμε να βρούμε το χρήστη με το μέγιστο πλήθος followers ανά γλώσσα:
+```scala
+dfJ2.withColumn("st", struct(col("user_followers"), col("user_name"))).
+      groupBy(col("lang")).agg(max(col("st")).as("st")).
+      select(col("lang"), col("st.user_followers").as("user_followers"), col("st.user_name").as("user_name")).
+      orderBy(col("user_followers").desc).show(false)
+```
+
+
 
 ## Resources
 Spark SQL paper: https://dblp.org/rec/conf/sigmod/ArmbrustXLHLBMK15
