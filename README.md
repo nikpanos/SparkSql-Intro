@@ -856,6 +856,7 @@ val dfJ2 = dfJ1.select(col("text"),
       col("lang"),
       col("user.followers_count").as("user_followers"),
       col("user.name").as("user_name")
+    )
 ```
 
 Εύρεση των χρηστών με το μεγαλύτερο μέσο όρο χαρακτήρων ανά μήνυμα.
