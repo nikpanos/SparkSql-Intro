@@ -887,7 +887,7 @@ val m = dfJ2.select(max("user_followers")).first().getLong(0)
 dfJ2.select("user_followers", "user_name").filter(col("user_followers") === m).show
 ```
 
-Ένας άλλος αποδοτικός τρόπος, είναι να χρησιμοποιήσουμε τη συνάρτηση struct η οποία ομαδοποιεί 2 ή περισσότερες κολώνες σε μία:
+Ένας άλλος αποδοτικός τρόπος, είναι να χρησιμοποιήσουμε τη συνάρτηση struct η οποία ομαδοποιεί 2 ή και περισσότερες κολώνες σε μία:
 ```scala
 dfJ2.withColumn("st", struct(col("user_followers"), col("user_name"))).
       select(max("st").as("st")).
